@@ -17,8 +17,8 @@ from urllib.request import urlopen
 from urllib.parse import urlparse, quote
 
 ##### CONSTANTS #######
-podcastDir = str("/var/www/virtual/bongo/html/podcasts/")
-externalUrl = "http://bongo.scorpius.uberspace.de/podcasts/"
+podcastDir = str("CHANGE")
+externalUrl = "http://example.com/podcasts"
 keepPodcasts = 3 # keep n last podcasts of each feed
 #######################
 categories = set()
