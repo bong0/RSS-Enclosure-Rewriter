@@ -18,6 +18,7 @@ from urllib.parse import urlparse, quote
 
 ##### CONSTANTS #######
 podcastDir = str("CHANGE")
+feedDir = podcastDir+"/feeds/" # CREATE!
 externalUrl = "http://example.com/podcasts"
 keepPodcasts = 3 # keep n last podcasts of each feed
 #######################
@@ -109,7 +110,7 @@ with open("/home/bongo/.podget/serverlist", "r") as servers: #read and extract r
             if(output and output=="verb"):
               print("modded to "+enclosure.attrib["url"])
       
-    with open("/home/bongo/html/podcasts/feeds/"+podcastName+".rss", "wb") as feed:
+    with open(feedDir+podcastName+".rss", "wb") as feed:
       feed.write(etree.tostring(tree, encoding="UTF-8"))
 
 #chmod podcasts
