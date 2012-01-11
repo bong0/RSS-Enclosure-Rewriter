@@ -105,6 +105,7 @@ with open("/home/bongo/.podget/serverlist", "r") as servers: #read and extract r
           if(podNameRE.search(os.path.basename(podcast))):
             if(output and output=="verb"):
               print("RE matched!!")
+            podcast = os.path.relpath(podcast, start=podcastDir)
             enclosure.attrib["url"] = quote(externalUrl+ podcast, safe=":/")
             if(output and output=="verb"):
               print("modded to "+enclosure.attrib["url"])
