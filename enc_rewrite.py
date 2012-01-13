@@ -5,7 +5,7 @@
 # Category
 #  ^- Podcast Name
 #    ^- Episode
-# Author: bongo Dec 2011
+# Author: bongo Dec 2011 - Jan 2012
 
 import sys
 import os
@@ -17,8 +17,11 @@ from urllib.request import urlopen
 from urllib.parse import urlparse, quote
 
 ##### CONSTANTS #######
-podcastDir = str("/var/www/virtual/bongo/html/podcasts/")
-externalUrl = "http://bongo.scorpius.uberspace.de/podcasts/"
+# please, dirs always w/ trailing "/"
+podcastDir = str("/var/www/podcasts/") # directory accessible by webserver to serve podcasts
+externalUrl = "http://example.com/podcasts/" # url pointing to podcastdir as seen from client
+feedDir = str("/var/www/podcasts/feeds/") # directory which serves the modified feeds to the client
+podget_cfgdir = str("/home/$USER/.podget/") # directory with your podget configuration files
 keepPodcasts = 3 # keep n last podcasts of each feed
 #######################
 categories = set()
@@ -32,7 +35,7 @@ for arg in sys.argv:
    output = None
 
 #prepare feed input
-with open("/home/bongo/.podget/serverlist", "r") as servers: #read and extract rss feed URLs from settings
+with open(podget_cfgdir+"serverlist", "r") as servers: #read and extract rss feed URLs from settings
   for line in servers.readlines():
     if(re.match("^\s?#", line)):
        continue
@@ -110,7 +113,7 @@ with open("/home/bongo/.podget/serverlist", "r") as servers: #read and extract r
             if(output and output=="verb"):
               print("modded to "+enclosure.attrib["url"])
       
-    with open("/home/bongo/html/podcasts/feeds/"+podcastName+".rss", "wb") as feed:
+    with open(feedDir+podcastName+".rss", "wb") as feed:
       feed.write(etree.tostring(tree, encoding="UTF-8"))
 
 #chmod podcasts
