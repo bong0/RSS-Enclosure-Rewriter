@@ -12,6 +12,8 @@ import os
 import re
 import time
 import unicodedata
+import codecs
+from xml.dom import minidom
 from xml.etree import ElementTree as etree
 from urllib.request import urlopen
 from urllib.parse import urlparse, quote
@@ -33,6 +35,12 @@ for arg in sys.argv:
    output = "min"
   elif(arg == "-oN"):
    output = None
+
+#prepare generation of opml file that includes all podcasts
+xml = minidom.Document()
+opml = xml.createElement('opml')
+opml.appendChild(xml.createElement('head'))
+body = xml.createElement('body')
 
 #prepare feed input
 with open(podget_cfgdir+"serverlist", "r") as servers: #read and extract rss feed URLs from settings
@@ -72,7 +80,7 @@ with open(podget_cfgdir+"serverlist", "r") as servers: #read and extract rss fee
               podclist[localPodcasts[dir+podc]] = dir+podc
             oldest = sorted(podclist)[0]
             os.remove(podclist[oldest])
-            if(output and (output=="verb"||output="min")):
+            if(output and (output=="verb" or output=="min")):
               print("removed "+podclist[oldest])
              
     
@@ -115,6 +123,21 @@ with open(podget_cfgdir+"serverlist", "r") as servers: #read and extract rss fee
       
     with open(feedDir+podcastName+".rss", "wb") as feed:
       feed.write(etree.tostring(tree, encoding="UTF-8"))
+    #add feed to opml
+    ##get html url
+    htmlUrl = tree.find("channel/link").text
+    podTitle = (tree.find("channel/title").text).translate(table)
+    outline = xml.createElement('outline') 
+    outline.setAttribute('title',podTitle) 
+    outline.setAttribute('htmlUrl',htmlUrl)
+    outline.setAttribute('xmlUrl',externalUrl+"feeds/"+podcastName+".rss")
+    body.appendChild(outline)
+
+#close opml
+opml.appendChild(body)
+xml.appendChild(opml)
+opmlFile = codecs.open(podcastDir+"feeds/all.opml", "w", "utf-8")
+xml.writexml(opmlFile, "    ", "", "\n", "UTF-8")
 
 #chmod podcasts
 for file in localPodcasts.keys():
@@ -127,6 +150,8 @@ for file in localPodcasts.keys():
 #chmod category dirs
 for category in categories:
   os.chmod(podcastDir+category, 0o701)
+  for dir in os.listdir(podcastDir+category):
+      os.chmod(podcastDir+category+"/"+dir, 0o701)
 
 if(output):
   print("Rewrote "+str(len(localPodcasts))+" enclosures successfully")
