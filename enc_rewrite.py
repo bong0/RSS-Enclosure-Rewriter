@@ -28,6 +28,7 @@ keepPodcasts = 3 # keep n last podcasts of each feed
 #######################
 categories = set()
 localPodcasts = dict()
+podcastNames = [] #list of all podcast names
 
 output = "verb"
 for arg in sys.argv:
@@ -45,7 +46,7 @@ body = xml.createElement('body')
 #prepare feed input
 with open(podget_cfgdir+"serverlist", "r") as servers: #read and extract rss feed URLs from settings
   for line in servers.readlines():
-    if(re.match("^\s?#", line)):
+    if(re.match("^\s?#", line)): #skip comments
        continue
     url = line.split()[0]
 
@@ -56,7 +57,7 @@ with open(podget_cfgdir+"serverlist", "r") as servers: #read and extract rss fee
       print("fetching "+ line.split()[0])
     feed = urlopen(line.split()[0]).read()
 
-    categories.add(line.split()[1]) #add category of #add category of feed
+    categories.add(line.split()[1]) #add category of feed
     
     #detect encoding of feed
     encoding = "UTF-8"
@@ -100,7 +101,8 @@ with open(podget_cfgdir+"serverlist", "r") as servers: #read and extract rss fee
     podcastName = re.sub("(\s)+", "_", podcastName)
     podcastName = re.sub(",", "", podcastName)
     podcastName = str(unicodedata.normalize('NFKD', podcastName).encode('ascii','ignore'))[2:-1]
-    
+   
+    podcastNames.append(podcastName)
 
     #process enclosures
     for item in tree.findall("channel/item"):
@@ -120,6 +122,8 @@ with open(podget_cfgdir+"serverlist", "r") as servers: #read and extract rss fee
             enclosure.attrib["url"] = quote(externalUrl+ podcast, safe=":/")
             if(output and output=="verb"):
               print("modded to "+enclosure.attrib["url"])
+      for badEnclosure in item.iterfind(".*content"):
+        tree.remove(badEnclosure)
       
     with open(feedDir+podcastName+".rss", "wb") as feed:
       feed.write(etree.tostring(tree, encoding="UTF-8"))
@@ -138,6 +142,38 @@ opml.appendChild(body)
 xml.appendChild(opml)
 opmlFile = codecs.open(podcastDir+"feeds/all.opml", "w", "utf-8")
 xml.writexml(opmlFile, "    ", "", "\n", "UTF-8")
+
+#remove feeds which weren't refreshed (those went out of config)
+for file in os.listdir(feedDir):
+  if(str(file)[:-4] in podcastNames or str(file) == "all.opml" or str(file)==".htaccess"): #if podcastname was processed, we do nothing
+    if(output=="verb"):
+      print("skipping file "+str(file)+" on old-feed-cleanup")
+    continue
+  else:
+    try:
+      if(output=="verb"):
+        print("removing file "+str(file)+" on old-feed-cleanup")
+      os.remove(feedDir+str(file))
+    except OSError:
+      if(output):
+        print("could not remove old rss feed from "+feedDir+"!")
+    
+#chmod feeds
+for file in podcastNames:
+  file+=".rss"
+  try:
+    os.chmod(feedDir+file, 0o604)
+  except:
+    if(output):
+      print("could not chmod feed/opml: "+file)
+
+#chmod opml
+  try:
+    os.chmod(feedDir+"all.opml",0o604)
+  except:
+    if(output):
+      print("could not chmod all.opml")
+
 
 #chmod podcasts
 for file in localPodcasts.keys():
